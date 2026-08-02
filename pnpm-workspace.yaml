@@ -1,0 +1,11 @@
+allowBuilds:
+  # Native binaries that are genuinely needed:
+  #   sharp         - Next.js image optimization in production builds
+  #   unrs-resolver - native resolver used by eslint-config-next
+  sharp: true
+  unrs-resolver: true
+  # No-op install scripts; nothing is compiled:
+  #   @google/genai - preinstall is `echo 'preinstall: no-op'`
+  #   protobufjs    - postinstall only prints a version-scheme warning
+  '@google/genai': false
+  protobufjs: false
