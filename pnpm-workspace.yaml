@@ -9,3 +9,8 @@ allowBuilds:
   #   protobufjs    - postinstall only prints a version-scheme warning
   '@google/genai': false
   protobufjs: false
+  # Prisma requires both: @prisma/engines' postinstall positions the query
+  # engine binaries (Prisma cannot run without them); prisma's preinstall
+  # is a Node version compatibility check.
+  '@prisma/engines': true
+  prisma: true

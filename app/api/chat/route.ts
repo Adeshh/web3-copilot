@@ -1,17 +1,9 @@
-import { GoogleGenAI } from "@google/genai";
-
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+import { generateReply } from "@/ai/gemini";
+import { addMessage, ensureConversation } from "@/db/conversations";
 
 export async function POST(req: Request) {
   try {
-    if (!process.env.GEMINI_API_KEY) {
-      return Response.json(
-        { error: "GEMINI_API_KEY is not set on the server." },
-        { status: 500 },
-      );
-    }
-
-    const { message } = await req.json();
+    const { message, conversationId } = await req.json();
 
     if (typeof message !== "string" || message.trim() === "") {
       return Response.json(
@@ -20,12 +12,22 @@ export async function POST(req: Request) {
       );
     }
 
-    const response = await ai.models.generateContent({
-      model: "gemini-3.6-flash",
-      contents: message,
-    });
+    // Resolves to an existing conversation, or creates one when the id is
+    // absent or stale (e.g. a localStorage value from a deleted thread).
+    const id = await ensureConversation(
+      typeof conversationId === "string" ? conversationId : undefined,
+    );
 
-    return Response.json({ reply: response.text });
+    // Saved before the model call so a Gemini failure still leaves a record
+    // of what was asked, and so createdAt reflects when it was asked.
+    await addMessage(id, "USER", message);
+
+    const reply = await generateReply(message);
+
+    await addMessage(id, "ASSISTANT", reply);
+
+    // Always return the authoritative id so a stale client self-heals.
+    return Response.json({ reply, conversationId: id });
   } catch (err) {
     console.error("[/api/chat]", err);
     return Response.json(
@@ -34,3 +36,4 @@ export async function POST(req: Request) {
     );
   }
 }
+  

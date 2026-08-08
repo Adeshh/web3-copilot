@@ -1,0 +1,44 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+// Prisma 7: connection URLs live in prisma.config.ts, not here.
+datasource db {
+  provider = "postgresql"
+}
+
+/// One chat thread. Holds many messages.
+model Conversation {
+  id        String   @id @default(cuid())
+  title     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  messages Message[]
+}
+
+/// A single turn in a conversation — either what the user asked
+/// or what the model answered.
+model Message {
+  id             String   @id @default(cuid())
+  conversationId String
+  role           Role
+  content        String
+  createdAt      DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  // The query we always run: "messages for conversation X, oldest first."
+  @@index([conversationId, createdAt])
+}
+
+enum Role {
+  USER
+  ASSISTANT
+}
