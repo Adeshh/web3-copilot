@@ -7,14 +7,32 @@ export async function createConversation(title?: string) {
 }
 
 /** Append one message to conversation */
-export function addMessage(conversationId: string, role: Role, content: string) {
-    return prisma.message.create({
+export async function addMessage(conversationId: string, role: Role, content: string) {
+    const message = await prisma.message.create({
         data: {
             conversationId,
             role,
             content
         }
     });
+
+    // Automatically set conversation title from the first user message
+    if (role === "USER") {
+        const conv = await prisma.conversation.findUnique({
+            where: { id: conversationId },
+            select: { title: true }
+        });
+
+        if (conv && !conv.title) {
+            const title = content.length > 40 ? `${content.slice(0, 40)}...` : content;
+            await prisma.conversation.update({
+                where: { id: conversationId },
+                data: { title }
+            });
+        }
+    }
+
+    return message;
 }
 
 /** Load a conversation with its messages, oldest first */
@@ -25,11 +43,20 @@ export async function getConversationWithMessages(id: string) {
     });
 }
 
-/** List conversations for a sidebar — no message bodies. */
+/** List conversations for a sidebar — including first message fallback. */
 export function listConversations() {
   return prisma.conversation.findMany({
     orderBy: { updatedAt: "desc" },
-    select: { id: true, title: true, updatedAt: true },
+    select: {
+      id: true,
+      title: true,
+      updatedAt: true,
+      messages: {
+        take: 1,
+        orderBy: { createdAt: "asc" },
+        select: { content: true }
+      }
+    },
   });
 }
 
@@ -44,4 +71,18 @@ export async function ensureConversation(id?: string): Promise<string> {
   }
   const created = await prisma.conversation.create({ data: {} });
   return created.id;
+}
+
+/** Fetch the last N messages for context, ordered chronologically (oldest to newest) */
+export async function getRecentMessages(conversationId: string, limit = 20) {
+  // Fetch the newest messages up to the limit
+  const messages = await prisma.message.findMany({
+    where: { conversationId },
+    orderBy: { createdAt: "desc" },
+    take: limit,
+    select: { role: true, content: true },
+  });
+
+  // Reverse so context reads chronologically (oldest to newest)
+  return messages.reverse();
 }

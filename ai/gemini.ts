@@ -20,12 +20,24 @@ function getClient(): GoogleGenAI {
   return client;
 }
 
-/** Send one message to Gemini and return the reply text. */
-export async function generateReply(message: string): Promise<string> {
+export type MessageInput = {
+  role: "USER" | "ASSISTANT";
+  content: string;
+};
+
+/** Send conversation context to Gemini and return the reply text */
+export async function generateReply(history: MessageInput[]): Promise<string> {
+  // Map DB roles ("USER"/"ASSISTANT") to Gemini API roles ("user"/"model")
+  const contents = history.map((msg) => ({
+    role: msg.role === "USER" ? "user" : "model",
+    parts: [{ text: msg.content }],
+  }));
+
   const response = await getClient().models.generateContent({
     model: MODEL,
-    contents: message,
+    contents,
   });
 
   return response.text ?? "";
 }
+
