@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type SubmitEvent } from "react";
+import { useEffect, useRef, useState, type SubmitEvent } from "react";
 
 const STORAGE_KEY = "conversationId";
 
@@ -17,6 +17,12 @@ export default function Chat() {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [sending, setSending] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Automatically scroll to bottom whenever messages list or sending state updates
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, sending]);
 
   // On first load: if we saved a conversation id before, fetch its messages.
   useEffect(() => {
@@ -155,6 +161,7 @@ export default function Chat() {
         {sending && (
           <p className="animate-pulse text-zinc-500">Thinking…</p>
         )}
+        <div ref={messagesEndRef} />
       </div>
 
       {error && <p className="text-red-600">{error}</p>}

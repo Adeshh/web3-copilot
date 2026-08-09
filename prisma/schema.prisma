@@ -38,6 +38,16 @@ model Message {
   @@index([conversationId, createdAt])
 }
 
+model TransactionAnalysis {
+  id            String @id @default(cuid())
+  hash          String
+  explanation   String
+  createdAt     DateTime @default(now())
+}
+  
+  
+
+
 enum Role {
   USER
   ASSISTANT
