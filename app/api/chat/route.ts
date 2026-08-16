@@ -1,8 +1,18 @@
 import { generateReply } from "@/ai/gemini";
 import { addMessage, ensureConversation, getRecentMessages } from "@/db/conversations";
+import { auth } from "@/auth";
 
 export async function POST(req: Request) {
   try {
+    const session = await auth();
+
+    //Kick anonymous users out
+    if (!session?.user?.id) {
+      return Response.json({
+        error: "Unauthorized",
+      }, { status: 401 });
+    }
+
     const { message, conversationId } = await req.json();
 
     if (typeof message !== "string" || message.trim() === "") {
@@ -12,24 +22,23 @@ export async function POST(req: Request) {
       );
     }
 
-    // Resolves to an existing conversation, or creates one when the id is absent/stale
+    // Resolves to an existing conversation, or creates one based on session
     const id = await ensureConversation(
-      typeof conversationId === "string" ? conversationId : undefined,
+      typeof conversationId === "string" ? conversationId : undefined, session.user.id
     );
 
-    // Save user prompt in DB before AI call so a Gemini failure leaves a record
+    // Saved before the model call so a Gemini failure still leaves a record
+    // of what was asked, and so createdAt reflects when it was asked.
     await addMessage(id, "USER", message);
 
-    // Fetch recent conversation context (last 20 messages including current query)
+    //Get all messages in the conversation to create the history
     const history = await getRecentMessages(id, 20);
 
-    // Generate AI response using full conversation context
     const reply = await generateReply(history);
 
-    // Save AI response in DB
     await addMessage(id, "ASSISTANT", reply);
 
-    // Return authoritative conversationId and reply text
+    // Always return the authoritative id so a stale client self-heals.
     return Response.json({ reply, conversationId: id });
   } catch (err) {
     console.error("[/api/chat]", err);
@@ -39,4 +48,3 @@ export async function POST(req: Request) {
     );
   }
 }
-  

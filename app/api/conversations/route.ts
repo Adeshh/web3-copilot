@@ -1,23 +1,21 @@
 import { listConversations } from "@/db/conversations";
+import { auth } from "@/auth";
 
 export async function GET() {
   try {
-    const conversations = await listConversations();
+    const session = await auth();
+    
+    if (!session?.user?.id) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const conversations = await listConversations(session.user.id);
 
     return Response.json({
-      conversations: conversations.map(({ id, title, updatedAt, messages }) => {
-        const firstMessage = messages[0]?.content;
-        const displayTitle =
-          title ||
-          (firstMessage
-            ? firstMessage.length > 40
-              ? `${firstMessage.slice(0, 40)}...`
-              : firstMessage
-            : "New Chat");
-
+      conversations: conversations.map(({ id, title, updatedAt }) => {
         return {
           id,
-          title: displayTitle,
+          title: title || "New Chat",
           updatedAt,
         };
       }),

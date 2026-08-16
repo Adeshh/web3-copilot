@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type SubmitEvent } from "react";
+import { useRouter } from "next/navigation";
 
 const STORAGE_KEY = "conversationId";
 
@@ -12,6 +13,7 @@ type Message = {
 };
 
 export default function Chat() {
+  const router = useRouter();
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [conversationId, setConversationId] = useState<string | null>(null);
@@ -89,8 +91,14 @@ export default function Chat() {
       }
 
       // Remember this thread so a page refresh reloads the same chat.
+      const isNewConversation = !conversationId;
       setConversationId(data.conversationId);
       localStorage.setItem(STORAGE_KEY, data.conversationId);
+
+      if (isNewConversation) {
+        // Force Next.js to refresh the Server Components (like Sidebar data)
+        router.refresh();
+      }
 
       // Append the AI reply below the user message we already showed.
       setMessages((prev) => [

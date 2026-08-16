@@ -1,7 +1,13 @@
 import { getConversationWithMessages } from "@/db/conversations";
+import { auth } from "@/auth";
 
 export async function GET(req: Request) {
   try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { searchParams } = new URL(req.url);
     const conversationId = searchParams.get("conversationId");
 
@@ -19,6 +25,10 @@ export async function GET(req: Request) {
         { error: "Conversation not found." },
         { status: 404 },
       );
+    }
+
+    if (conversation.userId && conversation.userId !== session.user.id) {
+      return Response.json({ error: "Forbidden" }, { status: 403 });
     }
 
     return Response.json({

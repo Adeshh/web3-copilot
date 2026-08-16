@@ -9,7 +9,7 @@ let client: GoogleGenAI | null = null;
  * means a missing key throws a clear error instead of letting the SDK
  * silently fall back to Vertex AI / ADC.
  */
-function getClient(): GoogleGenAI {
+export function getClient(): GoogleGenAI {
   const apiKey = process.env.GEMINI_API_KEY;
 
   if (!apiKey) {
@@ -25,19 +25,16 @@ export type MessageInput = {
   content: string;
 };
 
-/** Send conversation context to Gemini and return the reply text */
+/** Send one message to Gemini and return the reply text. */
 export async function generateReply(history: MessageInput[]): Promise<string> {
-  // Map DB roles ("USER"/"ASSISTANT") to Gemini API roles ("user"/"model")
+  // Convert DB roles ("USER"/"ASSISTANT") to Gemini roles ("user"/"model")
   const contents = history.map((msg) => ({
     role: msg.role === "USER" ? "user" : "model",
     parts: [{ text: msg.content }],
   }));
-
   const response = await getClient().models.generateContent({
     model: MODEL,
     contents,
   });
-
   return response.text ?? "";
 }
-

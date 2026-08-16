@@ -14,3 +14,4 @@ allowBuilds:
   # is a Node version compatibility check.
   '@prisma/engines': true
   prisma: true
+  esbuild: set this to true or false

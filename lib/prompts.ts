@@ -24,6 +24,8 @@ export function buildTransactionPrompt(tx: TransactionSummary):string {
     1. What occurred in this transaction.
     2. How much ETH was transferred.
     3. Whether it was a direct transfer or a smart contract call.
+    4. Estimate purpose
+    5. Gas implication in usd
     Keep the explanation clear, accurate, and easy for a non-technical person to read.
     `.trim();
 

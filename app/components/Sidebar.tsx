@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSession, signOut } from "next-auth/react";
 
 const STORAGE_KEY = "conversationId";
 
@@ -11,6 +12,7 @@ type ConversationItem = {
 };
 
 export default function Sidebar() {
+  const { data: session } = useSession();
   const [conversations, setConversations] = useState<ConversationItem[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -22,7 +24,7 @@ export default function Sidebar() {
     setActiveId(savedId);
 
     // Fetch conversation list from API
-    fetch("/api/conversations")
+    fetch("/api/conversations", { cache: "no-store" })
       .then((res) => {
         if (!res.ok) throw new Error("Failed to load conversations");
         return res.json();
@@ -101,6 +103,23 @@ export default function Sidebar() {
           })}
         </ul>
       </div>
+
+      {/* User Profile Footer */}
+      {session?.user && (
+        <div className="mt-auto border-t border-zinc-200 pt-4 dark:border-zinc-800">
+          <div className="flex items-center justify-between">
+            <div className="truncate text-sm text-zinc-600 dark:text-zinc-400 font-medium">
+              {session.user.email}
+            </div>
+            <button
+              onClick={() => signOut()}
+              className="rounded px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+            >
+              Sign Out
+            </button>
+          </div>
+        </div>
+      )}
     </aside>
   );
 }
