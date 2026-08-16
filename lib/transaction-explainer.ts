@@ -5,7 +5,7 @@ import { saveTransactionAnalysis } from "@/db/transactions";
 
 /**
  * Orchestrates the full pipeline:
- * Fetch Tx -> Build Prompt -> Ask Gemini -> Save to DB -> Return Explanation
+ * Fetch Tx -> Build Prompt -> Ask Gemini -> Return Explanation
  */
 export async function explainTransaction(txHash: string): Promise<string> {
     // 1. Fetch clean transaction data from blockchain RPC
@@ -19,9 +19,8 @@ export async function explainTransaction(txHash: string): Promise<string> {
         { role: "USER", content: prompt }
     ]);
 
-    // 4. Save analysis result to PostgreSQL database
     await saveTransactionAnalysis(txHash, explanation);
 
-    // 5. Return explanation string
+    // 4. Return explanation string
     return explanation;
 }
