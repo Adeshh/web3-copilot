@@ -10,11 +10,17 @@ The transfer(address to, uint256 value) function moves the amount of tokens from
 The approve(address spender, uint256 value) function allows a spender to withdraw from your account, multiple times, up to the value amount. It must emit an Approval event.
 The allowance(address owner, address spender) function returns the amount which spender is still allowed to withdraw from owner.`;
 
+const ERC721_DOC = `The ERC-721 standard allows for the implementation of a standard API for Non-Fungible Tokens (NFTs) within smart contracts.
+Unlike ERC-20, each ERC-721 token is completely unique and non-interchangeable.
+A token contract must implement the following methods: balanceOf, ownerOf, safeTransferFrom, transferFrom, approve, and setApprovalForAll.
+The ownerOf(uint256 _tokenId) function returns the address of the owner of the NFT.
+The safeTransferFrom function transfers the ownership of an NFT from one address to another address safely, checking that the recipient is aware of the ERC-721 protocol to prevent tokens from being locked forever.`;
+
 async function main() {
     console.log("starting ingestion");
 
    // 1. Split the document into chunks (by sentences/lines)
-  const chunks = ERC20_DOC.split("\n").filter((line) => line.trim().length > 10);
+  const chunks = ERC721_DOC.split("\n").filter((line) => line.trim().length > 10);
   // 2. Loop over each chunk, embed it, and save it to the DB
   for (const chunk of chunks) {
     console.log(`Embedding chunk: "${chunk.slice(0, 30)}..."`);
@@ -26,7 +32,7 @@ async function main() {
     
     await prisma.$executeRaw`
       INSERT INTO "Document" (id, source, chunk, embedding)
-      VALUES (${id}, 'ERC-20', ${chunk}, ${vectorString}::vector)
+      VALUES (${id}, 'ERC-721', ${chunk}, ${vectorString}::vector)
     `;
   }
   console.log(`✅ Successfully ingested ${chunks.length} chunks!`);

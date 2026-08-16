@@ -17,6 +17,7 @@ export default function Chat() {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [conversationId, setConversationId] = useState<string | null>(null);
+  const [useRag, setUseRag] = useState(true);
   const [error, setError] = useState("");
   const [sending, setSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -80,7 +81,7 @@ export default function Chat() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text, conversationId }),
+        body: JSON.stringify({ message: text, conversationId, useRag }),
       });
 
       const data = await res.json();
@@ -174,6 +175,14 @@ export default function Chat() {
 
       {error && <p className="text-red-600">{error}</p>}
 
+      <label className="flex items-center gap-2 text-sm text-zinc-500">
+        <input 
+          type="checkbox" 
+          checked={useRag} 
+          onChange={(e) => setUseRag(e.target.checked)} 
+        />
+        Use RAG Context
+      </label>
       <form onSubmit={handleSubmit} className="flex gap-2">
         <input
           type="text"
