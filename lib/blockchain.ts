@@ -22,3 +22,10 @@ export async function getTransaction(txHash: string) {
         blockNumber: tx.blockNumber,
     };
 }
+
+export async function getEthBalance(address: string) {
+    const balanceWei = await provider.getBalance(address);
+    return formatEther(balanceWei); // Converts massive numbers to regular ETH
+}
+
+
