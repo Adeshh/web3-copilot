@@ -1,4 +1,4 @@
-import { generateReply } from "@/ai/gemini";
+import { runAgent } from "@/ai/agents";
 import { addMessage, ensureConversation, getRecentMessages } from "@/db/conversations";
 import { auth } from "@/auth";
 import { findRelevantChunks } from "@/lib/retrieval";
@@ -59,7 +59,7 @@ export async function POST(req: Request) {
     }
 
     // 3. Send the entire history array (either augmented or plain) to Gemini
-    const reply = await generateReply(history);
+    const reply = await runAgent(history);
 
     await addMessage(id, "ASSISTANT", reply);
 
