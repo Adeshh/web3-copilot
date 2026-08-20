@@ -1,7 +1,6 @@
 import { runAgent } from "@/ai/agents";
 import { addMessage, ensureConversation, getRecentMessages } from "@/db/conversations";
 import { auth } from "@/auth";
-import { findRelevantChunks } from "@/lib/retrieval";
 
 export async function POST(req: Request) {
   try {
@@ -32,39 +31,18 @@ export async function POST(req: Request) {
     // of what was asked, and so createdAt reflects when it was asked.
     await addMessage(id, "USER", message);
 
-    // 1. Get all messages in the conversation to create the history
-    const history = await getRecentMessages(id, 20);
-
-    // 2. Only fetch chunks and inject them if the user enabled RAG
-    if (useRag) {
-      // Fetch the relevent chunks from postgres via pgvector
-      const relevantChunks = await findRelevantChunks(message, 6);
-
-      // Combine them into one big text block
-      const contextString = relevantChunks.join("\n\n");
-
-      // create the prompt with the chunks and history.
-      const augmentedMessage = `You are a helpful Web3 assistant. Answer the user's question using ONLY the following reference documents.
-      If the answer is not in the documents, say "I don't know based on the provided context."
-      --- CONTEXT ---
-      ${contextString}
-      --- END CONTEXT ---
-      User question: ${message}`;
-
-      // Replacing the current query message that we saved earlier with the augmented Message so the model
-      // dont get the current query message again, instead get the augmented message with context and history.
-      if (history.length > 0) {
-        history[history.length - 1].content = augmentedMessage;
-      }
-    }
-
+   
     // 3. Send the entire history array (either augmented or plain) to Gemini
-    const reply = await runAgent(history);
+    const agentResult = await runAgent(message, id);
 
-    await addMessage(id, "ASSISTANT", reply);
+    await addMessage(id, "ASSISTANT", agentResult.content);
 
     // Always return the authoritative id so a stale client self-heals.
-    return Response.json({ reply, conversationId: id });
+    return Response.json({ 
+      reply: agentResult.content, 
+      toolsUsed: agentResult.toolsUsed,
+      conversationId: id 
+    });
   } catch (err) {
     console.error("[/api/chat]", err);
     return Response.json(

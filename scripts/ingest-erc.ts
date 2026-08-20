@@ -16,26 +16,46 @@ A token contract must implement the following methods: balanceOf, ownerOf, safeT
 The ownerOf(uint256 _tokenId) function returns the address of the owner of the NFT.
 The safeTransferFrom function transfers the ownership of an NFT from one address to another address safely, checking that the recipient is aware of the ERC-721 protocol to prevent tokens from being locked forever.`;
 
-async function main() {
-    console.log("starting ingestion");
+const ERC1155_DOC = `The ERC-1155 standard allows for the implementation of a standard API for Multi Token contracts within smart contracts.
+ERC-1155 is a multi-token standard that can represent both fungible (like ERC-20) and non-fungible (like ERC-721) tokens in a single contract.
+A token contract must implement the following methods: balanceOf, balanceOfBatch, safeTransferFrom, safeBatchTransferFrom, setApprovalForAll, and isApprovedForAll.
+The safeTransferFrom(address from, address to, uint256 id, uint256 amount, bytes data) function transfers a specific amount of a specific token ID from one address to another.
+The safeBatchTransferFrom function allows transferring multiple token types in a single transaction, which is more gas-efficient than multiple ERC-20 or ERC-721 transfers.
+The balanceOfBatch function allows querying multiple balances in a single call, returning an array of balances for the given accounts and token IDs.
+ERC-1155 tokens emit TransferSingle and TransferBatch events for single and batch transfers respectively.`;
 
-   // 1. Split the document into chunks (by sentences/lines)
-  const chunks = ERC721_DOC.split("\n").filter((line) => line.trim().length > 10);
-  // 2. Loop over each chunk, embed it, and save it to the DB
-  for (const chunk of chunks) {
-    console.log(`Embedding chunk: "${chunk.slice(0, 30)}..."`);
-    const vector = await embedText(chunk);
-    // Prisma requires a raw SQL query to insert unsupported 'vector' types
-    // We cast the JSON array string into the Postgres vector type
-    const vectorString = `[${vector.join(",")}]`;
-    const id = crypto.randomUUID();
-    
-    await prisma.$executeRaw`
-      INSERT INTO "Document" (id, source, chunk, embedding)
-      VALUES (${id}, 'ERC-721', ${chunk}, ${vectorString}::vector)
-    `;
+const ALL_DOCS = [
+  { source: "ERC-20", content: ERC20_DOC },
+  { source: "ERC-721", content: ERC721_DOC },
+  { source: "ERC-1155", content: ERC1155_DOC },
+];
+
+async function main() {
+  console.log("Starting ingestion of all ERC standards...\n");
+
+  let totalChunks = 0;
+
+  for (const doc of ALL_DOCS) {
+    console.log(`📄 Ingesting ${doc.source}...`);
+    const chunks = doc.content.split("\n").filter((line) => line.trim().length > 10);
+
+    for (const chunk of chunks) {
+      console.log(`  Embedding chunk: "${chunk.slice(0, 40)}..."`);
+      const vector = await embedText(chunk);
+      const vectorString = `[${vector.join(",")}]`;
+      const id = crypto.randomUUID();
+
+      await prisma.$executeRaw`
+        INSERT INTO "Document" (id, source, chunk, embedding)
+        VALUES (${id}, ${doc.source}, ${chunk}, ${vectorString}::vector)
+      `;
+    }
+
+    console.log(`  ✅ ${doc.source}: ${chunks.length} chunks ingested\n`);
+    totalChunks += chunks.length;
   }
-  console.log(`✅ Successfully ingested ${chunks.length} chunks!`);
+
+  console.log(`🎉 Done! Total chunks ingested: ${totalChunks}`);
 }
 
 main()

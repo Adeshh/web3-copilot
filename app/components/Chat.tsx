@@ -10,6 +10,7 @@ type Message = {
   role: "USER" | "ASSISTANT";
   content: string;
   createdAt: string;
+  toolsUsed?: string[];
 };
 
 export default function Chat() {
@@ -17,7 +18,6 @@ export default function Chat() {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [conversationId, setConversationId] = useState<string | null>(null);
-  const [useRag, setUseRag] = useState(true);
   const [error, setError] = useState("");
   const [sending, setSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -81,7 +81,7 @@ export default function Chat() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text, conversationId, useRag }),
+        body: JSON.stringify({ message: text, conversationId }),
       });
 
       const data = await res.json();
@@ -108,6 +108,7 @@ export default function Chat() {
           id: `local-assistant-${Date.now()}`,
           role: "ASSISTANT",
           content: data.reply,
+          toolsUsed: data.toolsUsed,
           createdAt: new Date().toISOString(),
         },
       ]);
@@ -162,6 +163,15 @@ export default function Chat() {
                   : "border border-zinc-300 dark:border-zinc-700"
               }`}
             >
+              {msg.toolsUsed && msg.toolsUsed.length > 0 && (
+                <div className="mb-2 flex flex-wrap gap-1">
+                  {msg.toolsUsed.map((tool) => (
+                    <span key={tool} className="text-[10px] font-mono bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 px-1.5 py-0.5 rounded flex items-center gap-1">
+                      🔧 {tool}
+                    </span>
+                  ))}
+                </div>
+              )}
               {msg.content}
             </div>
           </div>
@@ -175,14 +185,6 @@ export default function Chat() {
 
       {error && <p className="text-red-600">{error}</p>}
 
-      <label className="flex items-center gap-2 text-sm text-zinc-500">
-        <input 
-          type="checkbox" 
-          checked={useRag} 
-          onChange={(e) => setUseRag(e.target.checked)} 
-        />
-        Use RAG Context
-      </label>
       <form onSubmit={handleSubmit} className="flex gap-2">
         <input
           type="text"

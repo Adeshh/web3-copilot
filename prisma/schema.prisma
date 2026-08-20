@@ -112,3 +112,13 @@ model Document {
   createdAt     DateTime @default(now())
 }
 
+model AgentState {
+  id            String   @id @default(cuid())
+  threadId      String   //This will link to our conversation id
+  checkpoint    Json     //Langgraph will dump its brain state here
+  createdAt     DateTime @default(now())
+
+  @@index([threadId])
+}
+
+
