@@ -43,8 +43,17 @@ export async function POST(req: Request) {
       toolsUsed: agentResult.toolsUsed,
       conversationId: id 
     });
-  } catch (err) {
+  } catch (err: any) {
     console.error("[/api/chat]", err);
+    
+    // Check if it's a rate limit error from Gemini
+    if (err?.status === 429 || err?.message?.includes("429") || err?.message?.includes("quota")) {
+      return Response.json(
+        { error: "Gemini API daily quota exceeded. The free tier only allows 20 requests PER DAY. Please upgrade to a paid tier or try again tomorrow!" },
+        { status: 429 },
+      );
+    }
+
     return Response.json(
       { error: "Failed to generate a response." },
       { status: 500 },
