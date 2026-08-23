@@ -48,3 +48,29 @@ export async function getTokenInfo(contractAddress: string) {
 }
 
 
+export async function getContractSourceCode(address: string) {
+    const apiKey = process.env.ETHERSCAN_API_KEY;
+    if (!apiKey) throw new Error("ETHERSCAN_API_KEY is missing in .env");
+
+    const url = `https://api.etherscan.io/v2/api?chainid=1&module=contract&action=getsourcecode&address=${address}&apikey=${apiKey}`;
+    
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (data.status !== "1" || !data.result || data.result.length === 0) {
+        throw new Error(`Failed to fetch source code: ${data.message || "Unknown error"}`);
+    }
+
+    const sourceCode = data.result[0].SourceCode;
+    
+    if (!sourceCode) {
+         throw new Error("Contract source code not found or not verified on Etherscan.");
+    }
+
+    // Sometimes Etherscan wraps multi-file contracts in extra brackets like {{ ... }}
+    // We can just return it as a string for the AI to read
+    return sourceCode;
+}
+
+
+

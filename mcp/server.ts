@@ -3,7 +3,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 
 // Import your existing tools and logic
-import { getTransaction, getTokenInfo, getEthBalance } from "@/lib/blockchain";
+import { getTransaction, getTokenInfo, getEthBalance, getContractSourceCode } from "@/lib/blockchain";
 import { findRelevantChunks } from "@/lib/retrieval";
 
 // 1. Initialize the modern MCP Server
@@ -77,6 +77,22 @@ server.registerTool(
     }
   }
 );
+
+server.registerTool(
+    "getContractSourceCode",
+    {
+        description: "Fetch the verified Solidity source code of a smart contract from Etherscan.",
+        inputSchema: { address: z.string() }
+    },
+    async ({ address }) => {
+        try {
+        const sourceCode = await getContractSourceCode(address);
+        return { content: [{ type: "text", text: sourceCode }] };
+        } catch (error: any) {
+        return { content: [{ type: "text", text: `Error: ${error.message}` }], isError: true };
+    }
+  }
+)
 
 // 3. Start the server using stdio transport
 async function main() {
