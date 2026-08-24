@@ -30,3 +30,27 @@ export function buildTransactionPrompt(tx: TransactionSummary):string {
     `.trim();
 
 }
+
+export const AUDITOR_PROMPT = `
+You are a senior smart contract auditor.
+Analyze the following Solidity code for:
+1. Reentrancy vulnerabilities
+2. Integer overflow/underflow
+3. Access control issues
+4. Unchecked external calls
+
+Return your analysis strictly as a JSON object matching this structure:
+{
+  "vulnerabilities": [
+    {
+      "type": "string (e.g. Reentrancy)",
+      "severity": "High" | "Medium" | "Low",
+      "description": "Detailed explanation of the issue",
+      "recommendation": "How to fix it"
+    }
+  ],
+  "summary": "A brief overview of the contract's overall security posture."
+}
+
+Do not include any markdown formatting or conversational text. Return ONLY the raw JSON.
+`;

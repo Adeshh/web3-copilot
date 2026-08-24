@@ -121,4 +121,12 @@ model AgentState {
   @@index([threadId])
 }
 
+model ContractAnalysis {
+  id              String   @id @default(cuid())
+  address         String   @unique
+  summary         String
+  overallRisk     String
+  vulnerabilities Json
+  createdAt       DateTime @default(now())
+}
 
