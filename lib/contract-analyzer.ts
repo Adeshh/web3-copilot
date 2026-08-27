@@ -2,7 +2,8 @@ import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { AUDITOR_PROMPT } from "./prompts";
 import { getContractSourceCode } from "./blockchain";
 import { prisma } from "@/db/prisma";
-import { z } from "zod"
+import { z } from "zod";
+import { findRelevantChunks } from "./retrieval";
 
 const AuditSchema = z.object({
   summary: z.string().describe("A brief overview of the contract's overall security posture."),
@@ -24,6 +25,13 @@ export async function analyzeContract(address: string) {
     // 2. Fetch the raw code
     const sourceCode = await getContractSourceCode(address);
 
+    // 2.1 RAG: Search our vector DB
+    const searchContext = sourceCode.substring(0, 1000);
+    const relevantVulnerabilities = await findRelevantChunks(searchContext, 3);
+    const ragContext = relevantVulnerabilities.length > 0 
+        ? `\n\nPay special attention to these known vulnerability patterns:\n${relevantVulnerabilities.join('\n')}` 
+        : "";
+
     // 3. Initialize LLM
     const llm = new ChatGoogleGenerativeAI({
         model: "gemini-3.6-flash",
@@ -35,7 +43,7 @@ export async function analyzeContract(address: string) {
 
     // 5. Invoke the AI (It will automatically return a parsed JS object matching our Zod schema!)
     const auditReport = await structuredLlm.invoke([
-        { role: "system", content: AUDITOR_PROMPT },
+        { role: "system", content: AUDITOR_PROMPT + ragContext },
         { role: "user", content: `Here is the Solidity code:\n\n${sourceCode}` }
     ]);
 
