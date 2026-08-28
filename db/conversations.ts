@@ -81,15 +81,3 @@ export async function ensureConversation(id?: string, userId?: string): Promise<
   const created = await createConversation(undefined, userId);
   return created.id;
 }
-
-/**Return the last 20 messages for given conversation id */
-export async function getRecentMessages(conversationId: string, limit = 20) {
-  const messages = await prisma.message.findMany({
-    where: { conversationId },
-    orderBy: { createdAt: "desc" },//Fetch newest 20
-    take: limit,
-    select: { role: true, content: true },
-  });
-  //Reverse the array so that it is in order with the conversation history oldest to newest
-  return messages.reverse();
-}

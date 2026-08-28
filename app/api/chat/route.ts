@@ -1,5 +1,5 @@
 import { runAgent } from "@/ai/agents";
-import { addMessage, ensureConversation, getRecentMessages } from "@/db/conversations";
+import { addMessage, ensureConversation } from "@/db/conversations";
 import { auth } from "@/auth";
 
 export async function POST(req: Request) {
