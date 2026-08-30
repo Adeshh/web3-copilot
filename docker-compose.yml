@@ -1,0 +1,32 @@
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgresql://web3user:web3password@db:5432/web3copilot
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - ETHERSCAN_API_KEY=${ETHERSCAN_API_KEY}
+      - ETHEREUM_RPC_URL=${ETHEREUM_RPC_URL}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: ankane/pgvector:latest
+    environment:
+      POSTGRES_USER: web3user
+      POSTGRES_PASSWORD: web3password
+      POSTGRES_DB: web3copilot
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U web3user -d web3copilot"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:
