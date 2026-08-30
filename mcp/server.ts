@@ -5,6 +5,9 @@ import { z } from "zod";
 // Import your existing tools and logic
 import { getTransaction, getTokenInfo, getEthBalance, getContractSourceCode } from "@/lib/blockchain";
 import { findRelevantChunks } from "@/lib/retrieval";
+import { analyzeContract } from "@/lib/contract-analyzer";
+import { getWalletOverview } from "@/lib/wallet";
+import { getWalletInsights } from "@/lib/ai-insights";
 
 // 1. Initialize the modern MCP Server
 const server = new McpServer({
@@ -93,6 +96,50 @@ server.registerTool(
     }
   }
 )
+
+
+server.registerTool(
+  "auditContract",
+  {
+    description: "Performs a deep security audit on a smart contract using RAG and known vulnerabilities. Use this when the user asks to analyze or audit a contract address.",
+    inputSchema: { address: z.string() }
+  },
+  async ({ address }) => {
+    try {
+      const report = await analyzeContract(address);
+      return {
+        content: [{
+          type: "text",
+          text: `Audit Complete for ${address}:\nSummary: ${report.summary}\nOverall Risk: ${report.overallRisk}\nVulnerabilities found: ${report.vulnerabilities.length}`
+        }]
+      };
+    } catch (e: any) {
+      return { content: [{ type: "text", text: `Failed to audit contract: ${e.message}` }], isError: true };
+    }
+  }
+);
+
+server.registerTool(
+  "getWalletInsights",
+  {
+    description: "Fetches a comprehensive portfolio overview and AI behavioral analysis of an Ethereum wallet (ETH balance, tokens, spending patterns, risk flags).",
+    inputSchema: { address: z.string() }
+  },
+  async ({ address }) => {
+    try {
+      const overview = await getWalletOverview(address);
+      const insights = await getWalletInsights(overview.recentTransactions);
+      return {
+        content: [{
+          type: "text",
+          text: `Wallet Analysis for ${address}:\n\nETH Balance: ${overview.ethBalance}\nActive ERC20 Tokens: ${overview.tokenCount}\n\nSpending Patterns: ${insights.spendingPatterns}\nDeFi Activity: ${insights.defiActivity}\nRisk Flags: ${insights.riskFlags.join(", ") || "None detected"}`
+        }]
+      };
+    } catch (e: any) {
+      return { content: [{ type: "text", text: `Failed to analyze wallet: ${e.message}` }], isError: true };
+    }
+  }
+);
 
 // 3. Start the server using stdio transport
 async function main() {
