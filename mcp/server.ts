@@ -110,7 +110,7 @@ server.registerTool(
       return {
         content: [{
           type: "text",
-          text: `Audit Complete for ${address}:\nSummary: ${report.summary}\nOverall Risk: ${report.overallRisk}\nVulnerabilities found: ${report.vulnerabilities.length}`
+          text: `Audit Complete for ${address}:\nSummary: ${report.summary}\nOverall Risk: ${report.overallRisk}\nVulnerabilities found: ${Array.isArray(report.vulnerabilities) ? report.vulnerabilities.length : 0}`
         }]
       };
     } catch (e: any) {
