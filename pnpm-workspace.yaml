@@ -1,3 +1,6 @@
+packages:
+  - "."
+
 allowBuilds:
   # Native binaries that are genuinely needed:
   #   sharp         - Next.js image optimization in production builds

@@ -13,6 +13,9 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: projectRoot,
   },
+  outputFileTracingIncludes: {
+    '/api/**/*': ['./mcp/**/*'],
+  },
 };
 
 export default nextConfig;

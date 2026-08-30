@@ -5,23 +5,46 @@ import { HumanMessage, AIMessage } from "@langchain/core/messages";
 import {PrismaSaver} from "@/lib/prisma-saver";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
-
+import { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
+import { JSONRPCMessage } from "@modelcontextprotocol/sdk/types.js";
+import { server } from "@/mcp/server";
 
 //setup global client cache to prevent spawning hundreds of process in dev
 const globalForMcp = globalThis as unknown as {mcpClient: Client | undefined};
 
+class InMemoryTransport implements Transport {
+  public onmessage?: (message: JSONRPCMessage) => void;
+  public onclose?: () => void;
+  public onerror?: (error: Error) => void;
+  public target?: InMemoryTransport;
+
+  async start() {}
+  async close() { this.onclose?.(); }
+  async send(message: JSONRPCMessage) {
+    // Avoid maximum call stack size exceeded
+    setTimeout(() => {
+      this.target?.onmessage?.(message);
+    }, 0);
+  }
+}
+
 async function getMcpClient() {
   if (globalForMcp.mcpClient) return globalForMcp.mcpClient;
-  // 2. We use Stdio transport to spawn the server as a background process
-  const transport = new StdioClientTransport({
-    command: "npx",
-    args: ["tsx", "--env-file=.env", "mcp/server.ts"],
-  });
+  
+  // In-memory transport (no child process overhead)
+  const clientTransport = new InMemoryTransport();
+  const serverTransport = new InMemoryTransport();
+  clientTransport.target = serverTransport;
+  serverTransport.target = clientTransport;
+  
+  await server.connect(serverTransport as any);
+  let transport = clientTransport;
+
   const client = new Client(
     { name: "Web3 Copilot Next.js App", version: "1.0.0" },
     { capabilities: {} }
   );
-  await client.connect(transport);
+  await client.connect(transport as any);
   globalForMcp.mcpClient = client;
   return client;
 }

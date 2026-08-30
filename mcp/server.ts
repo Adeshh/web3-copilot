@@ -10,7 +10,7 @@ import { getWalletOverview } from "@/lib/wallet";
 import { getWalletInsights } from "@/lib/ai-insights";
 
 // 1. Initialize the modern MCP Server
-const server = new McpServer({
+export const server = new McpServer({
   name: "Web3 Copilot MCP Server",
   version: "1.0.0",
 });
@@ -141,11 +141,12 @@ server.registerTool(
   }
 );
 
-// 3. Start the server using stdio transport
-async function main() {
-  const transport = new StdioServerTransport();
-  await server.connect(transport);
-  console.error("🚀 Web3 Copilot MCP Server running on stdio");
+// 3. Start the server using stdio transport (only if run directly)
+if (require.main === module || (typeof process !== "undefined" && process.argv[1]?.endsWith("mcp/server.ts"))) {
+  async function main() {
+    const transport = new StdioServerTransport();
+    await server.connect(transport);
+    console.error("🚀 Web3 Copilot MCP Server running on stdio");
+  }
+  main().catch(console.error);
 }
-
-main().catch(console.error);
