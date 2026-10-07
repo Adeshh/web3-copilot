@@ -4,7 +4,7 @@ Web3 Copilot is an intelligent, AI-powered blockchain assistant. It combines the
 
 Whether you're analyzing a suspicious smart contract, checking your token portfolio, or asking complex questions about ERC standards, Web3 Copilot handles it all through an intuitive chat interface.
 
-![Web3 Copilot Screenshot](public/screenshot.png) *(Note: Add a screenshot here!)*
+
 
 ## ✨ Features
 
